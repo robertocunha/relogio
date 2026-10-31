@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relógio</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --text: #23252b;
+    --muted: #7a7d85;
+    --accent: #2f6f5e;
+    --accent-soft: #e3efeb;
+    --border: #e4e2dc;
+    --danger: #b3453b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181c;
+      --card: #1f2127;
+      --text: #e9e8e4;
+      --muted: #8d9099;
+      --accent: #6fbfa8;
+      --accent-soft: #24332f;
+      --border: #2d3037;
+      --danger: #e08a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px 18px;
+  }
+  .clock-card { grid-column: 1 / -1; text-align: center; }
+  @media (max-width: 640px) {
+    main { grid-template-columns: 1fr; }
+    body { padding: 10px; }
+  }
+  h2 {
+    margin: 0 0 8px;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .display {
+    font-variant-numeric: tabular-nums;
+    font-weight: 300;
+    text-align: center;
+    line-height: 1.1;
+    margin: 6px 0 14px;
+  }
+  .clock-card .display { font-size: clamp(3rem, 14vw, 6.5rem); margin-bottom: 4px; }
+  .small-display { font-size: clamp(2.4rem, 9vw, 3.6rem); }
+  .small-display .cs { font-size: 0.45em; color: var(--muted); }
+  #date { color: var(--muted); font-size: 0.95rem; text-transform: capitalize; }
+  .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  button {
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #10201b; } }
+  button.preset { background: var(--accent-soft); border-color: transparent; min-width: 64px; }
+  button.preset:hover { border-color: var(--accent); }
+  .custom {
+    display: flex; gap: 8px; align-items: center; justify-content: center;
+    margin-top: 12px; color: var(--muted); font-size: 0.9rem;
+  }
+  .custom input {
+    width: 72px; font: inherit; padding: 7px 8px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); text-align: center;
+  }
+  .status { text-align: center; min-height: 1.3em; font-size: 0.9rem; color: var(--muted); }
+  .done .display { color: var(--danger); animation: blink 1s steps(2, start) infinite; }
+  @keyframes blink { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .done .display { animation: none; } }
+  .linklike {
+    border: none; background: none; color: var(--muted); font-size: 0.8rem;
+    padding: 4px 6px; text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <section class="card clock-card" aria-label="Relógio">
+    <h2>Relógio</h2>
+    <div class="display" id="clock">--:--:--</div>
+    <div id="date"></div>
+  </section>
+
+  <section class="card" aria-label="Cronômetro">
+    <h2>Cronômetro</h2>
+    <div class="display small-display" id="sw-display">00:00:00<span class="cs">.00</span></div>
+    <div class="row">
+      <button class="primary" id="sw-toggle">Iniciar</button>
+      <button id="sw-reset">Zerar</button>
+    </div>
+  </section>
+
+  <section class="card" id="timer-card" aria-label="Temporizador">
+    <h2>Temporizador</h2>
+    <div class="display small-display" id="tm-display">00:00</div>
+    <div class="status" id="tm-status">Escolha um tempo</div>
+    <div class="row">
+      <button class="preset" data-min="5">5 min</button>
+      <button class="preset" data-min="10">10 min</button>
+      <button class="preset" data-min="15">15 min</button>
+      <button class="preset" data-min="30">30 min</button>
+    </div>
+    <div class="custom">
+      <label for="tm-custom">Outro:</label>
+      <input type="number" id="tm-custom" min="1" max="999" placeholder="min" inputmode="numeric">
+      <button id="tm-custom-go">Iniciar</button>
+    </div>
+    <div class="row">
+      <button id="tm-toggle" disabled>Pausar</button>
+      <button id="tm-reset">Reset</button>
+    </div>
+    <div class="row"><button class="linklike" id="tm-test">testar som</button></div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+
+  /* ---------- Relógio ---------- */
+  function tickClock() {
+    const d = new Date();
+    $('clock').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    $('date').textContent = d.toLocaleDateString('pt-BR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
+
+  /* ---------- Cronômetro ---------- */
+  const sw = { running: false, start: 0, elapsed: 0 };
+
+  function swNow() { return sw.running ? sw.elapsed + (performance.now() - sw.start) : sw.elapsed; }
+
+  function renderSw() {
+    const ms = swNow();
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
+    const cs = Math.floor((ms % 1000) / 10);
+    $('sw-display').innerHTML = `${pad(h)}:${pad(m)}:${pad(s)}<span class="cs">.${pad(cs)}</span>`;
+    $('sw-toggle').textContent = sw.running ? 'Pausar' : (sw.elapsed > 0 ? 'Continuar' : 'Iniciar');
+  }
+
+  $('sw-toggle').onclick = () => {
+    if (sw.running) {
+      sw.elapsed += performance.now() - sw.start;
+      sw.running = false;
+    } else {
+      sw.start = performance.now();
+      sw.running = true;
+    }
+    renderSw();
+  };
+  $('sw-reset').onclick = () => { sw.running = false; sw.elapsed = 0; renderSw(); };
+
+  /* ---------- Som de passarinhos (Web Audio, sem arquivos externos) ---------- */
+  let ctx = null, master = null;
+
+  function unlockAudio() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  function chirp(t, f0, f1, dur, vol) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  function stopBirds() {
+    if (master) { try { master.disconnect(); } catch (e) {} master = null; }
+  }
+
+  function playBirds() {
+    unlockAudio();
+    if (!ctx) return;
+    stopBirds();
+    master = ctx.createGain();
+    master.gain.value = 0.6;
+    master.connect(ctx.destination);
+    const t0 = ctx.currentTime + 0.05;
+    // 4 frases, com pausas entre elas
+    for (let phrase = 0; phrase < 4; phrase++) {
+      let t = t0 + phrase * 2.0;
+      const base = 2400 + Math.random() * 1400;
+      const n = 3 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < n; i++) {
+        const up = Math.random() > 0.4;
+        const f0 = base * (0.85 + Math.random() * 0.4);
+        const f1 = up ? f0 * 1.35 : f0 * 0.7;
+        const dur = 0.07 + Math.random() * 0.08;
+        chirp(t, f0, f1, dur, 0.07);
+        // trinado curto
+        if (Math.random() > 0.6) chirp(t + dur * 0.5, f1, f0, dur * 0.8, 0.04);
+        t += dur + 0.06 + Math.random() * 0.09;
+      }
+    }
+  }
+
+  /* ---------- Temporizador ---------- */
+  const tm = { running: false, end: 0, remaining: 0, total: 0, finished: false };
+
+  function tmLeft() { return tm.running ? Math.max(0, tm.end - Date.now()) : tm.remaining; }
+
+  function fmtTimer(ms) {
+    const total = Math.ceil(ms / 1000);
+    const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+
+  function renderTm() {
+    $('tm-display').textContent = fmtTimer(tmLeft());
+    $('timer-card').classList.toggle('done', tm.finished);
+    const toggle = $('tm-toggle');
+    toggle.disabled = tm.finished || tm.total === 0;
+    toggle.textContent = tm.running ? 'Pausar' : 'Continuar';
+    let status = 'Escolha um tempo';
+    if (tm.finished) status = 'Tempo esgotado';
+    else if (tm.running) status = 'Contando…';
+    else if (tm.total > 0) status = 'Pausado';
+    $('tm-status').textContent = status;
+  }
+
+  function startTimer(minutes) {
+    unlockAudio();
+    stopBirds();
+    const ms = Math.round(minutes * 60000);
+    if (!(ms > 0)) return;
+    tm.total = ms;
+    tm.remaining = ms;
+    tm.end = Date.now() + ms;
+    tm.running = true;
+    tm.finished = false;
+    renderTm();
+  }
+
+  function finishTimer() {
+    tm.running = false;
+    tm.remaining = 0;
+    tm.finished = true;
+    playBirds();
+    renderTm();
+  }
+
+  document.querySelectorAll('.preset').forEach(b => {
+    b.onclick = () => startTimer(Number(b.dataset.min));
+  });
+
+  $('tm-custom-go').onclick = () => {
+    const v = parseFloat($('tm-custom').value);
+    if (v > 0) startTimer(v);
+  };
+  $('tm-custom').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('tm-custom-go').click();
+  });
+
+  $('tm-toggle').onclick = () => {
+    if (tm.finished || tm.total === 0) return;
+    if (tm.running) {
+      tm.remaining = Math.max(0, tm.end - Date.now());
+      tm.running = false;
+    } else {
+      tm.end = Date.now() + tm.remaining;
+      tm.running = true;
+    }
+    renderTm();
+  };
+
+  $('tm-reset').onclick = () => {
+    stopBirds();
+    tm.running = false;
+    tm.remaining = 0;
+    tm.total = 0;
+    tm.finished = false;
+    renderTm();
+  };
+
+  $('tm-test').onclick = () => playBirds();
+
+  /* ---------- Loop principal ---------- */
+  function loop() {
+    tickClock();
+    if (sw.running) renderSw();
+    if (tm.running) {
+      if (tm.end - Date.now() <= 0) finishTimer(); else renderTm();
+    }
+  }
+  setInterval(loop, 100);
+  document.addEventListener('visibilitychange', loop);
+
+  tickClock(); renderSw(); renderTm();
+})();
+</script>
+</body>
+</html>
